@@ -4,8 +4,13 @@ import com.nali.blockchain.exception.BlockchainException;
 import com.nali.blockchain.exception.DataLoadException;
 import com.nali.blockchain.io.CsvDataLoader;
 import com.nali.blockchain.io.DataLoader;
+import com.nali.blockchain.model.Blockchain;
+import com.nali.blockchain.model.Ledger;
 import com.nali.blockchain.model.TransferTransaction;
 import com.nali.blockchain.service.BlockchainService;
+import com.nali.blockchain.service.ChainValidator;
+import com.nali.blockchain.service.Mempool;
+import com.nali.blockchain.service.MiningStrategy;
 import com.nali.blockchain.service.ProofOfWork;
 import com.nali.blockchain.ui.ConsoleMenu;
 
@@ -24,7 +29,9 @@ public class Application {
 
     public static void main(String[] args) {
         DataLoader loader = new CsvDataLoader(WALLETS_FILE, TRANSACTIONS_FILE);
-        BlockchainService service = new BlockchainService(new ProofOfWork(MINING_DIFFICULTY), MAX_TRANSACTIONS_PER_BLOCK);
+        MiningStrategy miningStrategy = new ProofOfWork(MINING_DIFFICULTY);
+        BlockchainService service = new BlockchainService(miningStrategy, new ChainValidator(miningStrategy),
+                new Ledger(), new Blockchain(), new Mempool(), MAX_TRANSACTIONS_PER_BLOCK);
 
         try {
             service.initialize(loader.loadWallets());

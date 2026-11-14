@@ -44,8 +44,7 @@ public class TransferTransaction extends Transaction {
     }
 
     @Override
-    public void validate() throws InvalidTransactionException {
-        super.validate();
+    protected void validateSpecificRules() throws InvalidTransactionException {
         if (fee.compareTo(BigDecimal.ZERO) < 0) {
             throw new InvalidTransactionException("Fee must not be negative, but was " + fee);
         }

@@ -39,12 +39,20 @@ public abstract class Transaction {
 
     /**
      * Checks the rules that do not depend on balances.
-     * Subclasses can add their own rules, but must call super.validate() first.
+     * This method is final: a subclass cannot skip the common rules,
+     * it can only add its own rules in validateSpecificRules().
      */
-    public void validate() throws InvalidTransactionException {
+    public final void validate() throws InvalidTransactionException {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new InvalidTransactionException("Amount must be positive, but was " + amount);
         }
+        validateSpecificRules();
+    }
+
+    /**
+     * Extra rules of a subclass. By default there are none.
+     */
+    protected void validateSpecificRules() throws InvalidTransactionException {
     }
 
     public BigDecimal getFee() {

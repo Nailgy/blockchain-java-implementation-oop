@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -27,22 +28,37 @@ import java.util.Optional;
 public class BlockchainService {
 
     private final Map<String, Wallet> wallets = new LinkedHashMap<>();
-    private final Ledger ledger = new Ledger();
-    private final Blockchain blockchain = new Blockchain();
-    private final Mempool mempool = new Mempool();
     private final MiningStrategy miningStrategy;
     private final ChainValidator chainValidator;
+    private final Ledger ledger;
+    private final Blockchain blockchain;
+    private final Mempool mempool;
     private final int maxTransactionsPerBlock;
 
-    // The mining strategy is given from outside (Dependency Inversion):
-    // this class only depends on the MiningStrategy interface.
-    public BlockchainService(MiningStrategy miningStrategy, int maxTransactionsPerBlock) {
+    /**
+     * Every object this service works with is given from outside (dependency injection),
+     * so Application decides which objects are used and tests can pass their own.
+     * The service depends on the MiningStrategy interface, not on ProofOfWork (Dependency Inversion).
+     */
+    public BlockchainService(MiningStrategy miningStrategy, ChainValidator chainValidator, Ledger ledger,
+                             Blockchain blockchain, Mempool mempool, int maxTransactionsPerBlock) {
         if (maxTransactionsPerBlock <= 0) {
             throw new IllegalArgumentException("maxTransactionsPerBlock must be positive: " + maxTransactionsPerBlock);
         }
-        this.miningStrategy = miningStrategy;
-        this.chainValidator = new ChainValidator(miningStrategy);
+        this.miningStrategy = Objects.requireNonNull(miningStrategy, "miningStrategy must not be null");
+        this.chainValidator = Objects.requireNonNull(chainValidator, "chainValidator must not be null");
+        this.ledger = Objects.requireNonNull(ledger, "ledger must not be null");
+        this.blockchain = Objects.requireNonNull(blockchain, "blockchain must not be null");
+        this.mempool = Objects.requireNonNull(mempool, "mempool must not be null");
         this.maxTransactionsPerBlock = maxTransactionsPerBlock;
+    }
+
+    /**
+     * Shorter constructor that creates new, empty objects for everything except the mining strategy.
+     */
+    public BlockchainService(MiningStrategy miningStrategy, int maxTransactionsPerBlock) {
+        this(miningStrategy, new ChainValidator(miningStrategy), new Ledger(), new Blockchain(),
+                new Mempool(), maxTransactionsPerBlock);
     }
 
     /**
