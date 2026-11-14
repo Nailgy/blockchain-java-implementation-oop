@@ -1,0 +1,5 @@
+from,to,amount,fee
+ALICE-01,BOB-02,30,1.5
+
+BOB-02,ALICE-01,ten,1
+BOB-02,ALICE-01,5,0

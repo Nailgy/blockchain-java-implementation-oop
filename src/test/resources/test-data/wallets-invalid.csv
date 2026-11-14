@@ -1,0 +1,6 @@
+address,owner,initialBalance
+ALICE-01,Alice,100
+BOB-02,Bob,abc
+CHARLIE-03,Charlie,-5
+DIANA-04,Diana
+ALICE-01,Alice again,20

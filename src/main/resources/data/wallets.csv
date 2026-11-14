@@ -1,0 +1,6 @@
+address,owner,initialBalance
+ALICE-01,Alice,100
+BOB-02,Bob,50
+CHARLIE-03,Charlie,0
+DIANA-04,Diana,250
+MINER-99,Mining Pool,0
