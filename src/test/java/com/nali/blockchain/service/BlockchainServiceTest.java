@@ -5,6 +5,8 @@ import com.nali.blockchain.exception.InsufficientFundsException;
 import com.nali.blockchain.exception.InvalidChainException;
 import com.nali.blockchain.exception.InvalidTransactionException;
 import com.nali.blockchain.model.Block;
+import com.nali.blockchain.model.Blockchain;
+import com.nali.blockchain.model.Ledger;
 import com.nali.blockchain.model.TransferTransaction;
 import com.nali.blockchain.model.Wallet;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +79,30 @@ class BlockchainServiceTest {
         service.mineBlock("MINER-99");
 
         assertAmount("50", service.getBalance("MINER-99"));
+    }
+
+    @Test
+    void failedMiningShouldLeaveEverythingUnchanged() throws BlockchainException {
+        // The service uses this ledger, so the test can change a balance behind the mempool's back.
+        Ledger ledger = new Ledger();
+        ProofOfWork proofOfWork = new ProofOfWork(1);
+        BlockchainService otherService = new BlockchainService(proofOfWork, new ChainValidator(proofOfWork),
+                ledger, new Blockchain(), new Mempool(), 2);
+        Map<Wallet, BigDecimal> initialBalances = new LinkedHashMap<>();
+        initialBalances.put(new Wallet("ALICE-01", "Alice"), new BigDecimal("100"));
+        initialBalances.put(new Wallet("BOB-02", "Bob"), BigDecimal.ZERO);
+        otherService.initialize(initialBalances);
+
+        otherService.submitTransaction(new TransferTransaction("ALICE-01", "BOB-02", new BigDecimal("90"), BigDecimal.ONE));
+        // Alice now has only 40, so the pending transfer of 91 can no longer be applied.
+        ledger.debit("ALICE-01", new BigDecimal("60"));
+
+        assertThrows(InsufficientFundsException.class, () -> otherService.mineBlock("BOB-02"));
+
+        assertAmount("40", otherService.getBalance("ALICE-01"));
+        assertAmount("0", otherService.getBalance("BOB-02"));
+        assertEquals(1, otherService.getBlocks().size());
+        assertEquals(1, otherService.getPendingTransactions().size());
     }
 
     @Test

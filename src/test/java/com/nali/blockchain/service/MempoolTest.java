@@ -65,21 +65,38 @@ class MempoolTest {
     }
 
     @Test
-    void shouldTakeHighestFeesFirst() throws BlockchainException {
+    void shouldSelectHighestFeesFirst() throws BlockchainException {
         mempool.add(transfer("10", "1"), ledger);
         mempool.add(transfer("10", "5"), ledger);
         mempool.add(transfer("10", "3"), ledger);
 
-        List<TransferTransaction> taken = mempool.takeTransactions(2);
+        List<TransferTransaction> selected = mempool.selectTransactions(2);
 
-        assertEquals(2, taken.size());
-        assertAmount("5", taken.get(0).getFee());
-        assertAmount("3", taken.get(1).getFee());
-        assertEquals(1, mempool.size());
+        assertEquals(2, selected.size());
+        assertAmount("5", selected.get(0).getFee());
+        assertAmount("3", selected.get(1).getFee());
+        // Selecting does not remove anything.
+        assertEquals(3, mempool.size());
     }
 
     @Test
-    void takingFromEmptyMempoolShouldReturnEmptyList() {
-        assertTrue(mempool.takeTransactions(3).isEmpty());
+    void shouldRemoveOnlyTheGivenTransactions() throws BlockchainException {
+        mempool.add(transfer("10", "1"), ledger);
+        mempool.add(transfer("10", "5"), ledger);
+
+        mempool.remove(mempool.selectTransactions(1));
+
+        assertEquals(1, mempool.size());
+        assertAmount("1", mempool.getPendingTransactions().get(0).getFee());
+    }
+
+    @Test
+    void selectingFromEmptyMempoolShouldReturnEmptyList() {
+        assertTrue(mempool.selectTransactions(3).isEmpty());
+    }
+
+    @Test
+    void shouldRejectNonPositiveMaxCount() {
+        assertThrows(IllegalArgumentException.class, () -> mempool.selectTransactions(0));
     }
 }

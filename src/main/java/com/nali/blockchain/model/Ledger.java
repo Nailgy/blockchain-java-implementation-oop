@@ -35,6 +35,16 @@ public class Ledger {
         balances.put(address, current.subtract(amount));
     }
 
+    /**
+     * Returns an independent copy: changing the copy does not change this ledger.
+     * Used to try a block before really applying it.
+     */
+    public Ledger copy() {
+        Ledger copy = new Ledger();
+        copy.balances.putAll(balances);
+        return copy;
+    }
+
     public Map<String, BigDecimal> getAllBalances() {
         return Collections.unmodifiableMap(balances);
     }

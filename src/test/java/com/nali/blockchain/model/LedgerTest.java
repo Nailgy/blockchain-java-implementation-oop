@@ -58,6 +58,18 @@ class LedgerTest {
     }
 
     @Test
+    void copyShouldBeIndependentFromOriginal() throws InsufficientFundsException {
+        Ledger copy = ledger.copy();
+
+        copy.debit("ALICE-01", new BigDecimal("30"));
+        copy.credit("BOB-02", new BigDecimal("30"));
+
+        assertAmount("70", copy.getBalance("ALICE-01"));
+        assertAmount("100", ledger.getBalance("ALICE-01"));
+        assertAmount("0", ledger.getBalance("BOB-02"));
+    }
+
+    @Test
     void shouldThrowExceptionWhenAmountIsNotPositive() {
         assertThrows(IllegalArgumentException.class, () -> ledger.credit("ALICE-01", BigDecimal.ZERO));
         assertThrows(IllegalArgumentException.class, () -> ledger.debit("ALICE-01", new BigDecimal("-5")));

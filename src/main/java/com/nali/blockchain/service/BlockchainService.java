@@ -94,7 +94,7 @@ public class BlockchainService {
      */
     public Block mineBlock(String minerAddress) throws BlockchainException {
         requireKnownWallet(minerAddress);
-        List<TransferTransaction> selected = mempool.takeTransactions(maxTransactionsPerBlock);
+        List<TransferTransaction> selected = mempool.selectTransactions(maxTransactionsPerBlock);
 
         List<Transaction> blockTransactions = new ArrayList<>(selected);
         // The reward must be the last transaction of the block: ChainValidator checks it.
@@ -102,15 +102,28 @@ public class BlockchainService {
 
         Block block = miningStrategy.mineBlock(blockchain.size(), blockchain.getLatestBlock().getHash(), blockTransactions);
         applyAndAdd(block);
+        // Removed only now: if the block failed, the transactions are still pending.
+        mempool.remove(selected);
         return block;
     }
 
+    /**
+     * Adds a block "all or nothing": if one transaction fails, the ledger and the chain stay unchanged.
+     */
     private void applyAndAdd(Block block) throws BlockchainException {
+        // 1. Try the whole block on a copy of the ledger. If a transaction fails here,
+        //    the exception stops everything before the real ledger is touched.
+        Ledger trialLedger = ledger.copy();
         for (Transaction transaction : block.getTransactions()) {
             // Polymorphism: a transfer moves money, a reward creates money.
+            transaction.applyTo(trialLedger);
+        }
+
+        // 2. Every transaction worked, so the block can be added and applied for real.
+        blockchain.addBlock(block);
+        for (Transaction transaction : block.getTransactions()) {
             transaction.applyTo(ledger);
         }
-        blockchain.addBlock(block);
     }
 
     public void validateChain() throws InvalidChainException {

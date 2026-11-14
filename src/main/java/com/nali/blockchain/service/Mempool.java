@@ -49,19 +49,25 @@ public class Mempool {
     }
 
     /**
-     * Removes and returns up to maxCount transactions, the highest fees first,
-     * because miners prefer the transactions that pay them the most.
+     * Returns up to maxCount transactions, the highest fees first, because miners prefer
+     * the transactions that pay them the most. They stay in the mempool until remove() is called,
+     * so nothing is lost if the block cannot be added.
      */
-    public List<TransferTransaction> takeTransactions(int maxCount) {
+    public List<TransferTransaction> selectTransactions(int maxCount) {
         if (maxCount <= 0) {
             throw new IllegalArgumentException("maxCount must be positive: " + maxCount);
         }
-        List<TransferTransaction> selected = pending.stream()
+        return pending.stream()
                 .sorted(Comparator.comparing(Transaction::getFee).reversed())
                 .limit(maxCount)
                 .toList();
-        pending.removeAll(selected);
-        return selected;
+    }
+
+    /**
+     * Removes transactions that were put into a block.
+     */
+    public void remove(List<TransferTransaction> transactions) {
+        pending.removeAll(transactions);
     }
 
     public List<TransferTransaction> getPendingTransactions() {
