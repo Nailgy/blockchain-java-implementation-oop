@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.nali.blockchain.AmountAssertions.assertAmount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +37,7 @@ class MempoolTest {
         mempool.add(transfer("30", "1"), ledger);
 
         assertEquals(1, mempool.size());
-        assertEquals(new BigDecimal("31"), mempool.getPendingSpending("ALICE-01"));
+        assertAmount("31", mempool.getPendingSpending("ALICE-01"));
     }
 
     @Test
@@ -72,8 +73,8 @@ class MempoolTest {
         List<TransferTransaction> taken = mempool.takeTransactions(2);
 
         assertEquals(2, taken.size());
-        assertEquals(new BigDecimal("5"), taken.get(0).getFee());
-        assertEquals(new BigDecimal("3"), taken.get(1).getFee());
+        assertAmount("5", taken.get(0).getFee());
+        assertAmount("3", taken.get(1).getFee());
         assertEquals(1, mempool.size());
     }
 

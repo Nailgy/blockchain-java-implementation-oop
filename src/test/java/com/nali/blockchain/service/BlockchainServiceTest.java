@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.nali.blockchain.AmountAssertions.assertAmount;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,9 +40,9 @@ class BlockchainServiceTest {
     @Test
     void genesisBlockShouldGiveInitialBalances() {
         assertEquals(1, service.getBlocks().size());
-        assertEquals(new BigDecimal("100"), service.getBalance("ALICE-01"));
-        assertEquals(new BigDecimal("50"), service.getBalance("BOB-02"));
-        assertEquals(BigDecimal.ZERO, service.getBalance("MINER-99"));
+        assertAmount("100", service.getBalance("ALICE-01"));
+        assertAmount("50", service.getBalance("BOB-02"));
+        assertAmount("0", service.getBalance("MINER-99"));
     }
 
     @Test
@@ -51,10 +52,10 @@ class BlockchainServiceTest {
         Block block = service.mineBlock("MINER-99");
 
         assertEquals(1, block.getIndex());
-        assertEquals(new BigDecimal("68"), service.getBalance("ALICE-01"));
-        assertEquals(new BigDecimal("80"), service.getBalance("BOB-02"));
+        assertAmount("68", service.getBalance("ALICE-01"));
+        assertAmount("80", service.getBalance("BOB-02"));
         // Reward 50 + fee 2
-        assertEquals(new BigDecimal("52"), service.getBalance("MINER-99"));
+        assertAmount("52", service.getBalance("MINER-99"));
         assertTrue(service.getPendingTransactions().isEmpty());
     }
 
@@ -75,7 +76,7 @@ class BlockchainServiceTest {
     void miningWithoutPendingTransactionsShouldOnlyRewardTheMiner() throws BlockchainException {
         service.mineBlock("MINER-99");
 
-        assertEquals(BlockchainService.MINING_REWARD, service.getBalance("MINER-99"));
+        assertAmount("50", service.getBalance("MINER-99"));
     }
 
     @Test

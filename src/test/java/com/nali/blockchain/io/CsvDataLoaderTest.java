@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
+import static com.nali.blockchain.AmountAssertions.assertAmount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,7 +23,7 @@ class CsvDataLoaderTest {
         Map<Wallet, BigDecimal> wallets = loader.loadWallets();
 
         assertEquals(2, wallets.size());
-        assertEquals(new BigDecimal("100"), wallets.get(new Wallet("ALICE-01", "Alice")));
+        assertAmount("100", wallets.get(new Wallet("ALICE-01", "Alice")));
         assertTrue(loader.getWarnings().isEmpty());
     }
 
@@ -46,7 +47,7 @@ class CsvDataLoaderTest {
 
         assertEquals(2, transactions.size());
         assertEquals("ALICE-01", transactions.get(0).getSender());
-        assertEquals(new BigDecimal("1.5"), transactions.get(0).getFee());
+        assertAmount("1.5", transactions.get(0).getFee());
         assertEquals(1, loader.getWarnings().size());
     }
 

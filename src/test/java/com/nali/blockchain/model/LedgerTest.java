@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 
+import static com.nali.blockchain.AmountAssertions.assertAmount;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -21,28 +22,28 @@ class LedgerTest {
 
     @Test
     void unknownAddressShouldHaveZeroBalance() {
-        assertEquals(BigDecimal.ZERO, ledger.getBalance("NOBODY"));
+        assertAmount("0", ledger.getBalance("NOBODY"));
     }
 
     @Test
     void shouldAddMoneyWhenCredited() {
         ledger.credit("ALICE-01", new BigDecimal("25.5"));
 
-        assertEquals(new BigDecimal("125.5"), ledger.getBalance("ALICE-01"));
+        assertAmount("125.5", ledger.getBalance("ALICE-01"));
     }
 
     @Test
     void shouldRemoveMoneyWhenDebited() throws InsufficientFundsException {
         ledger.debit("ALICE-01", new BigDecimal("40"));
 
-        assertEquals(new BigDecimal("60"), ledger.getBalance("ALICE-01"));
+        assertAmount("60", ledger.getBalance("ALICE-01"));
     }
 
     @Test
     void shouldAllowDebitOfTheExactBalance() throws InsufficientFundsException {
         ledger.debit("ALICE-01", new BigDecimal("100"));
 
-        assertEquals(0, ledger.getBalance("ALICE-01").compareTo(BigDecimal.ZERO));
+        assertAmount("0", ledger.getBalance("ALICE-01"));
     }
 
     @Test
@@ -51,9 +52,9 @@ class LedgerTest {
                 () -> ledger.debit("ALICE-01", new BigDecimal("100.01")));
 
         assertEquals("ALICE-01", exception.getAddress());
-        assertEquals(new BigDecimal("100"), exception.getAvailable());
+        assertAmount("100", exception.getAvailable());
         // The balance must not change after a failed debit.
-        assertEquals(new BigDecimal("100"), ledger.getBalance("ALICE-01"));
+        assertAmount("100", ledger.getBalance("ALICE-01"));
     }
 
     @Test

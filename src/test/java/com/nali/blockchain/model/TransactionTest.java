@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static com.nali.blockchain.AmountAssertions.assertAmount;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class TransactionTest {
@@ -28,8 +28,8 @@ class TransactionTest {
 
         transfer.applyTo(ledger);
 
-        assertEquals(new BigDecimal("68"), ledger.getBalance("ALICE-01"));
-        assertEquals(new BigDecimal("30"), ledger.getBalance("BOB-02"));
+        assertAmount("68", ledger.getBalance("ALICE-01"));
+        assertAmount("30", ledger.getBalance("BOB-02"));
     }
 
     @Test
@@ -38,8 +38,8 @@ class TransactionTest {
 
         assertDoesNotThrow(() -> reward.applyTo(ledger));
 
-        assertEquals(new BigDecimal("50"), ledger.getBalance("MINER-99"));
-        assertEquals(new BigDecimal("100"), ledger.getBalance("ALICE-01"));
+        assertAmount("50", ledger.getBalance("MINER-99"));
+        assertAmount("100", ledger.getBalance("ALICE-01"));
     }
 
     @Test
@@ -53,8 +53,8 @@ class TransactionTest {
             transaction.applyTo(ledger);
         }
 
-        assertEquals(new BigDecimal("79"), ledger.getBalance("ALICE-01"));
-        assertEquals(new BigDecimal("30"), ledger.getBalance("BOB-02"));
+        assertAmount("79", ledger.getBalance("ALICE-01"));
+        assertAmount("30", ledger.getBalance("BOB-02"));
     }
 
     @Test
@@ -90,5 +90,19 @@ class TransactionTest {
         Transaction transfer = new TransferTransaction("ALICE-01", "ALICE-01", BigDecimal.TEN, BigDecimal.ONE);
 
         assertThrows(InvalidTransactionException.class, transfer::validate);
+    }
+
+    @Test
+    void shouldRejectRewardWithZeroAmount() {
+        Transaction reward = new RewardTransaction("MINER-99", BigDecimal.ZERO);
+
+        assertThrows(InvalidTransactionException.class, reward::validate);
+    }
+
+    @Test
+    void shouldRejectRewardWithNegativeAmount() {
+        Transaction reward = new RewardTransaction("MINER-99", new BigDecimal("-50"));
+
+        assertThrows(InvalidTransactionException.class, reward::validate);
     }
 }
