@@ -50,7 +50,7 @@ public class Application {
         System.out.println("Loaded " + service.getWallets().size() + " wallets and "
                 + service.getPendingTransactions().size() + " pending transactions.");
 
-        new ConsoleMenu(service, new Scanner(System.in)).start();
+        new ConsoleMenu(service, new Scanner(System.in), System.out).start();
     }
 
     // A transaction from the file that breaks a rule is rejected, the others are still loaded.
