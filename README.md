@@ -12,22 +12,32 @@ It is **not** a real distributed blockchain: there is no network and no cryptogr
 ---
 
 ## Requirements
-- JDK 25
-- Maven 3.9+
+- JDK 21 or later
+- Maven is **not** required: the project contains the Maven wrapper (`mvnw`), which downloads
+  the right Maven version the first time it runs (internet access needed once).
 
 ## How to run it
-From the project root:
+From the project root, on Linux or macOS:
 
 ```bash
-mvn compile exec:java
+./mvnw compile exec:java
 ```
 
+On Windows:
+
+```bash
+mvnw.cmd compile exec:java
+```
+
+If Maven is installed, `mvn compile exec:java` works too.
 Or in IntelliJ IDEA: open `Application.java` and click **Run**.
 
 ## How to run the tests
 ```bash
-mvn test
+./mvnw test
 ```
+
+(`mvnw.cmd test` on Windows, or `mvn test`.)
 
 Or in IntelliJ IDEA: right-click `src/test/java` → **Run 'All Tests'**.
 
@@ -41,7 +51,10 @@ Or in IntelliJ IDEA: right-click `src/test/java` → **Run 'All Tests'**.
 - Mine blocks with **proof-of-work**; the transactions with the highest fees are chosen first
   and the miner receives a reward of 50 plus all the fees of the block
 - Show the wallets ranked by balance, the pending transactions and the whole chain
-- Validate the whole chain and show how tampering with a block is detected
+- Validate the whole chain: block order, links, proof-of-work, **miner rewards** and balances
+- Show how tampering with a block is detected
+- Add a block **all or nothing**: if one of its transactions fails, the balances, the chain and
+  the pending transactions stay unchanged
 
 ## Main classes
 | Class | Package | Responsibility |
@@ -55,11 +68,13 @@ Or in IntelliJ IDEA: right-click `src/test/java` → **Run 'All Tests'**.
 | `Blockchain` | `model` | Ordered list of blocks |
 | `Mempool` | `service` | Pending transactions, double-spending check, choice by fee |
 | `MiningStrategy` / `ProofOfWork` | `service` | How blocks are mined and checked |
+| `ConsensusRules` | `service` | The miner reward rule, shared by mining and validation |
 | `ChainValidator` | `service` | Checks the whole chain |
 | `BlockchainService` | `service` | Main business operations used by the UI |
 | `DataLoader` / `CsvDataLoader` | `io` | Loading the initial data |
 | `ConsoleMenu` | `ui` | User interaction only |
 | `HashUtil` | `util` | SHA-256 helper |
+| `MoneyFormatter` | `util` | Shows every amount the same way (`54` instead of `54.0`) |
 | `Application` | root | Creates the objects and starts the menu |
 
 ## Project structure
@@ -71,7 +86,7 @@ src/
 │   │   ├── service/     business logic
 │   │   ├── io/          loading data from files
 │   │   ├── exception/   custom exceptions
-│   │   ├── ui/          console interaction
+│   │   ├── ui/          console interaction (and its input exception)
 │   │   ├── util/        helpers
 │   │   └── Application.java
 │   └── resources/data/  CSV files loaded at startup
@@ -115,7 +130,7 @@ call `transaction.applyTo(ledger)` on every element without knowing its real typ
 - a `TransferTransaction` takes amount + fee from the sender and gives the amount to the receiver;
 - a `RewardTransaction` only gives money to the receiver.
 
-`validate()`, `getSender()`, `getFee()` and `getType()` are also overridden.
+`validateSpecificRules()`, `getSender()`, `getFee()` and `getType()` are also overridden.
 `ProofOfWork` is used through the `MiningStrategy` type, and `CsvDataLoader` through the
 `DataLoader` type.
 
@@ -123,6 +138,10 @@ call `transaction.applyTo(ledger)` on every element without knowing its real typ
 - **Abstract class `Transaction`:** every transaction shares the same fields and common code
   (`validate()`, `toDataString()`), and only `applyTo()`, `getSender()` and `getType()`
   differ. An abstract class can hold shared fields and code; an interface cannot hold fields.
+  `validate()` is `final`: it always checks the common rule (positive amount) and then calls
+  `validateSpecificRules()`, which a subclass can override to add its own rules
+  (`TransferTransaction` checks the fee and the receiver). A subclass can add rules but cannot
+  skip the common ones.
 - **Interface `MiningStrategy`:** it only describes a capability ("mine a block", "check a hash")
   with no shared data, and it allows different implementations to be swapped.
 - **Interface `DataLoader`:** the application does not depend on the file format; a JSON
@@ -134,8 +153,12 @@ call `transaction.applyTo(ledger)` on every element without knowing its real typ
 | `BlockchainException` | Base class of all business errors (checked) |
 | `InsufficientFundsException` | A wallet tries to spend more than it has available |
 | `InvalidTransactionException` | Non-positive amount, negative fee, sending to yourself, unknown wallet, transaction submitted twice |
-| `InvalidChainException` | Validation finds a wrong index, a broken link, an invalid proof-of-work or an invalid transaction |
+| `InvalidChainException` | Validation finds a wrong index, a broken link, an invalid proof-of-work, a wrong miner reward or an invalid transaction |
 | `DataLoadException` | A data file is missing, unreadable or contains no valid wallet |
+| `InvalidInputException` (package `ui`) | The user types something the menu cannot use (not a number, a block that does not exist) or the input ends. It does not extend `BlockchainException` because it is not a business rule. |
+
+The console menu catches only `BlockchainException` and `InvalidInputException`; other exceptions
+are programming errors and are not hidden behind an "invalid input" message.
 
 Standard exceptions are also used: `IllegalArgumentException` (bad arguments, invalid CSV line),
 `NumberFormatException` (invalid number), `NullPointerException` (via `Objects.requireNonNull`),
@@ -158,13 +181,23 @@ and Alice tries to spend money that she has already promised (double spending).
 ## SOLID principles
 - **S — Single Responsibility:** each class has one job. `CsvDataLoader` only reads files,
   `Mempool` only manages pending transactions, `ChainValidator` only checks the chain,
-  `ConsoleMenu` only talks to the user and `Application` only connects the objects.
-- **O — Open/Closed:** a new kind of transaction is a new subclass of `Transaction`, and
-  a new mining algorithm is a new `MiningStrategy`; the existing code that uses them does not change.
+  `ConsensusRules` only holds the reward rule, `ConsoleMenu` only talks to the user and
+  `Application` only creates the objects and connects them.
+- **O — Open/Closed:** a new mining algorithm is a new `MiningStrategy`, and a new file format
+  is a new `DataLoader`; the classes that use them do not change. For transactions it is
+  partly true: the code that applies and checks transactions (`BlockchainService.applyAndAdd`,
+  `ChainValidator`) works with any `Transaction` subclass, but a new kind of transaction also
+  needs a new value in the `TransactionType` enum. Users can only submit transfers on purpose:
+  `Mempool`, `BlockchainService.submitTransaction()` and `DataLoader` use `TransferTransaction`,
+  because rewards must only be created by mining.
 - **L — Liskov Substitution:** any `Transaction` subclass can be used where a `Transaction`
-  is expected. `RewardTransaction.applyTo()` even throws fewer exceptions than its parent.
+  is expected. Because `validate()` is `final`, every subclass keeps the common rules, and
+  `RewardTransaction.applyTo()` throws fewer exceptions than its parent, never more.
 - **I — Interface Segregation:** `MiningStrategy` and `DataLoader` are small interfaces with
   only the methods their users need.
-- **D — Dependency Inversion:** `BlockchainService` and `ChainValidator` receive a
-  `MiningStrategy` in their constructor instead of creating `ProofOfWork` themselves, and
-  `Application` works with a `DataLoader`. This is what allows the tests to use an easier difficulty.
+- **D — Dependency Inversion:** `BlockchainService` and `ChainValidator` depend on the
+  `MiningStrategy` interface, not on `ProofOfWork`, and `Application` works with a
+  `DataLoader`. In addition, `BlockchainService` receives all the objects it uses
+  (`Ledger`, `Blockchain`, `Mempool`, `ChainValidator`) in its constructor, and `Application`
+  creates them. This is why the tests can use an easier difficulty, and why a test can pass its
+  own `Ledger` to check that a failing block leaves everything unchanged.
