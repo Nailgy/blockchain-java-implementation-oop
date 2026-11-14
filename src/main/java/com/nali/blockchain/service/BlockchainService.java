@@ -26,8 +26,6 @@ import java.util.Optional;
  */
 public class BlockchainService {
 
-    public static final BigDecimal MINING_REWARD = new BigDecimal("50");
-
     private final Map<String, Wallet> wallets = new LinkedHashMap<>();
     private final Ledger ledger = new Ledger();
     private final Blockchain blockchain = new Blockchain();
@@ -82,12 +80,9 @@ public class BlockchainService {
         requireKnownWallet(minerAddress);
         List<TransferTransaction> selected = mempool.takeTransactions(maxTransactionsPerBlock);
 
-        BigDecimal totalFees = selected.stream()
-                .map(Transaction::getFee)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
         List<Transaction> blockTransactions = new ArrayList<>(selected);
-        blockTransactions.add(new RewardTransaction(minerAddress, MINING_REWARD.add(totalFees)));
+        // The reward must be the last transaction of the block: ChainValidator checks it.
+        blockTransactions.add(new RewardTransaction(minerAddress, ConsensusRules.calculateReward(selected)));
 
         Block block = miningStrategy.mineBlock(blockchain.size(), blockchain.getLatestBlock().getHash(), blockTransactions);
         applyAndAdd(block);
