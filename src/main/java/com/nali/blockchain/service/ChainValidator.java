@@ -6,6 +6,7 @@ import com.nali.blockchain.model.Block;
 import com.nali.blockchain.model.Ledger;
 import com.nali.blockchain.model.Transaction;
 import com.nali.blockchain.model.TransactionType;
+import com.nali.blockchain.util.MoneyFormatter;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -85,8 +86,9 @@ public class ChainValidator {
         BigDecimal expectedReward = ConsensusRules.calculateReward(otherTransactions);
         BigDecimal actualReward = transactions.getLast().getAmount();
         if (actualReward.compareTo(expectedReward) != 0) {
-            throw new InvalidChainException("Block #" + block.getIndex() + " has a reward of " + actualReward
-                    + " but the allowed reward is " + expectedReward);
+            throw new InvalidChainException("Block #" + block.getIndex() + " has a reward of "
+                    + MoneyFormatter.format(actualReward) + " but the allowed reward is "
+                    + MoneyFormatter.format(expectedReward));
         }
     }
 }

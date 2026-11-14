@@ -7,6 +7,7 @@ import com.nali.blockchain.model.Transaction;
 import com.nali.blockchain.model.TransferTransaction;
 import com.nali.blockchain.model.Wallet;
 import com.nali.blockchain.service.BlockchainService;
+import com.nali.blockchain.util.MoneyFormatter;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -75,7 +76,7 @@ public class ConsoleMenu {
     private void showWallets() {
         System.out.println("Wallets (richest first):");
         for (Wallet wallet : service.getWalletsByBalance()) {
-            System.out.println("  " + wallet + " : " + service.getBalance(wallet.getAddress()));
+            System.out.println("  " + wallet + " : " + MoneyFormatter.format(service.getBalance(wallet.getAddress())));
         }
     }
 

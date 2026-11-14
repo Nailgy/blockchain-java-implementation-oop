@@ -2,6 +2,7 @@ package com.nali.blockchain.model;
 
 import com.nali.blockchain.exception.InsufficientFundsException;
 import com.nali.blockchain.exception.InvalidTransactionException;
+import com.nali.blockchain.util.MoneyFormatter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -87,6 +88,6 @@ public abstract class Transaction {
     @Override
     public String toString() {
         return "[" + getType() + "] " + getSender() + " -> " + receiver
-                + " : " + amount + " (fee " + getFee() + ")";
+                + " : " + MoneyFormatter.format(amount) + " (fee " + MoneyFormatter.format(getFee()) + ")";
     }
 }

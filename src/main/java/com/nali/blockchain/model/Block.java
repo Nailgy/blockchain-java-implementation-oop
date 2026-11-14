@@ -11,7 +11,7 @@ import java.util.Objects;
  * all fields are final and the list of transactions is a copy that cannot be modified.
  * Its hash is calculated from all its data, so any change would give a different hash.
  */
-public class Block {
+public final class Block {
 
     // The first block has no previous block, so it points to this value instead.
     public static final String GENESIS_PREVIOUS_HASH = "0";

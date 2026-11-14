@@ -1,5 +1,7 @@
 package com.nali.blockchain.exception;
 
+import com.nali.blockchain.util.MoneyFormatter;
+
 import java.math.BigDecimal;
 
 /**
@@ -13,7 +15,8 @@ public class InsufficientFundsException extends BlockchainException {
     private final BigDecimal available;
 
     public InsufficientFundsException(String address, BigDecimal requested, BigDecimal available) {
-        super("Wallet " + address + " has " + available + " available but " + requested + " was requested");
+        super("Wallet " + address + " has " + MoneyFormatter.format(available) + " available but "
+                + MoneyFormatter.format(requested) + " was requested");
         this.address = address;
         this.requested = requested;
         this.available = available;
